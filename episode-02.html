@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROSE | 2화</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body { margin:0; background:#fff; }
+#reader { max-width:900px; margin:auto; }
+#reader img { display:block; width:100%; height:auto; margin-top:55px; }
+.episode-nav { text-align:center; padding:45px 10px; }
+.episode-nav a { margin:0 15px; color:inherit; }
+</style>
+</head>
+<body class="reading-mode">
+<header class="viewer-control">
+<a href="index.html"><strong>ROSE</strong></a>
+<span>2화</span>
+</header>
+
+<main id="reader" class="reader"></main>
+
+<footer class="episode-nav viewer-control">
+<a href="episode-01.html">← 이전화</a>
+<a href="index.html">목록보기</a>
+</footer>
+
+<script>
+async function loadEpisode() {
+  const reader = document.getElementById("reader");
+  try {
+    const url = "https://api.github.com/repos/wheelprimeweb/rose-webtoon/contents/episodes/02";
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("목록 불러오기 실패");
+    const files = await response.json();
+
+    const images = files
+      .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f.name))
+      .sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+
+    for (const file of images) {
+      const img = document.createElement("img");
+      img.src = "episodes/02/" + encodeURIComponent(file.name);
+      img.alt = "2화 " + file.name;
+      img.loading = "lazy";
+      reader.appendChild(img);
+    }
+  } catch (error) {
+    reader.textContent = "이미지를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.";
+  }
+}
+loadEpisode();
+</script>
+</body>
+</html>
