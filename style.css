@@ -8,3 +8,16 @@
 @media(max-width:600px){.viewer-toolbar{gap:9px;font-size:11px}.viewer-toolbar a{padding:9px 12px}}
 
 .reader{background:#fff}.reader img{display:block;max-width:100%;height:auto}
+/* Generated reader: preserve white spacing and reserve each image's exact ratio. */
+.episode-page{background:#fff}
+.episode-1{background:#f5f5f5}
+.cut{position:relative;margin:0;background:#fff}
+.cut img{display:block;width:100%;height:auto;margin:0;background:#fff}
+.retry{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:14px;background:#fff;border:1px solid #777;border-radius:6px;cursor:pointer}
+.retry[hidden]{display:none}
+#menu-toggle{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:11;background:#fffefae8;border:1px solid #bbb;border-radius:20px;padding:10px 14px;color:#333;cursor:pointer}
+.viewer-toolbar{padding-bottom:calc(15px + env(safe-area-inset-bottom));padding-right:80px;flex-wrap:wrap}
+.bottom{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;padding-bottom:90px}
+.bottom span{color:#777;font-size:13px}
+.chapter:hover,.chapter:focus-visible{background:#fafafa}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.viewer-control{transition:none}}
