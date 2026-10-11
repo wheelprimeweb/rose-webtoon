@@ -75,13 +75,16 @@ def page(title, body, extra=''):
 def build(root, out, cache):
     config = json.loads((root/'site-config.json').read_text(encoding='utf-8'))
     episodes = discover(root)
-    # Stop accidental deletion, reordering or replacement of the published 1/2 originals.
+    # Protect existing cuts from accidental omission, but allow author corrections
+    # under the same filename and additional cuts. Git history preserves originals.
     baseline = json.loads((root/'originals-lock.json').read_text(encoding='utf-8'))
+    corrections = {}
     for folder, files in baseline.items():
         current = next((fs for _, d, fs in episodes if d.name == folder), [])
-        if [p.name for p in current] != [f['file'] for f in files]: raise ValueError(f'{folder}화 원본 목록이 변경되었습니다. 기존 컷을 복원하세요.')
-        for saved, path in zip(files, current):
-            if digest(path) != saved['sha256']: raise ValueError(f'기존 원본 변경 감지: {path}')
+        by_name = {p.name: p for p in current}
+        missing = [f['file'] for f in files if f['file'] not in by_name]
+        if missing: raise ValueError(f'{folder}화 기존 컷 누락: {", ".join(missing)}. 수정본을 같은 파일명으로 업로드하세요.')
+        corrections[folder] = [saved['file'] for saved in files if digest(by_name[saved['file']]) != saved['sha256']]
     if out.exists():
         # Only the explicitly designated generated directory may be replaced.
         if out.name != '_site' or out.resolve().parent != root.resolve(): raise ValueError('출력 폴더는 저장소 바로 아래 _site여야 합니다.')
@@ -98,6 +101,7 @@ def build(root, out, cache):
         settings = config['episodes'].get(folder.name, {})
         width = settings.get('width', 900)
         entry = {'number':number,'url':f'episode-{number:02}.html','count':len(files),'images':[], 'warnings':[]}
+        entry['revised_originals'] = corrections.get(folder.name, [])
         hashes = {}
         markup = []
         originals_dir = out/'episodes'/folder.name
@@ -114,7 +118,7 @@ def build(root, out, cache):
             for variant in info['variants']:
                 shutil.copy2(directory/variant['name'], asset_dir/variant['name'])
                 variants.append({**variant,'url':f'assets/{directory.name}/{variant["name"]}'})
-            original_url = f'episodes/{quote(folder.name)}/{quote(source.name)}'
+            original_url = f'episodes/{quote(folder.name)}/{quote(source.name)}?v={info["sha256"][:16]}'
             gap = settings.get('gaps',{}).get(source.name, config['default_gap'])
             item = {**info,'file':source.name,'original_url':original_url,'gap':gap,'variants':variants}
             entry['images'].append(item)
@@ -147,6 +151,7 @@ def build(root, out, cache):
     rows = '\n'.join(f'|{e["number"]}화|{e["count"]}|{e["original_bytes"]/1e6:.1f}|{e["native_bytes"]/1e6:.1f}|{e["mobile_640_bytes"]/1e6:.1f}|{e["mobile_960_bytes"]/1e6:.1f}|' for e in manifest['episodes'])
     summary = '# ROSE 빌드 결과\n\n원본 픽셀과 무손실 WebP 일치 검사 통과. 640/960px는 비율을 유지해 축소한 별도 표시용 이미지입니다. 기기 화면과 배율에 따라 선택 크기가 달라집니다.\n\n|회차|컷|원본 MB|원래 해상도 WebP MB|640px MB|960px MB|\n|---|---:|---:|---:|---:|---:|\n'+rows+f'\n\n재사용한 이미지: {cache_hits}개. 번호 공백은 오류가 아닙니다.\n'
     for e in manifest['episodes']:
+        if e['revised_originals']: print(f'{e["number"]}화 수정본 반영: {", ".join(e["revised_originals"])}')
         for warning in e['warnings']: summary += f'\n- {e["number"]}화: {warning}'
     (out/'build-report.md').write_text(summary,encoding='utf-8')
     total_size = sum(p.stat().st_size for p in out.rglob('*') if p.is_file())

@@ -35,13 +35,24 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual([i['file'] for i in result['episodes'][0]['images']],['001.png','2.png','10.png'])
         checker.check(self.root/'_site')
         self.assertTrue((self.root/'_site/episode-100.html').exists())
-    def test_original_lock_prevents_modification_or_missing(self):
+    def test_original_correction_and_addition_publish_but_missing_cut_fails(self):
         path = self.image('01','001.png')
         (self.root/'originals-lock.json').write_text(json.dumps({'01':[{'file':path.name,'sha256':builder.digest(path)}]}))
+        old = self.build()['episodes'][0]['images'][0]
         self.image('01','001.png','red')
-        with self.assertRaisesRegex(ValueError,'원본 변경'): self.build()
+        self.image('01','002.png','blue')
+        episode = self.build()['episodes'][0]
+        new = episode['images'][0]
+        self.assertEqual(episode['count'],2)
+        self.assertEqual(episode['revised_originals'],['001.png'])
+        self.assertNotEqual(old['variants'][0]['url'],new['variants'][0]['url'])
+        self.assertNotEqual(old['original_url'],new['original_url'])
+        self.assertEqual(new['sha256'],builder.digest(path))
+        with Image.open(self.root/'_site'/new['variants'][0]['url']) as im:
+            self.assertEqual(im.convert('RGB').getpixel((0,0)),(255,0,0))
+        checker.check(self.root/'_site')
         path.unlink()
-        with self.assertRaises(ValueError): self.build()
+        with self.assertRaisesRegex(ValueError,'기존 컷 누락'): self.build()
     def test_lossless_cache_and_source_unchanged(self):
         path = self.image('01','한글 2.png')
         before = builder.digest(path)

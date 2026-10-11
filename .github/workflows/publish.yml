@@ -31,6 +31,7 @@ jobs:
           key: rose-lossless-v3-${{ runner.os }}-${{ hashFiles('scripts/build.py', 'requirements.txt') }}-${{ github.sha }}
           restore-keys: |
             rose-lossless-v3-${{ runner.os }}-${{ hashFiles('scripts/build.py', 'requirements.txt') }}-
+            rose-lossless-v3-${{ runner.os }}-
       - name: 자동 등록·순서·복구 검사
         run: python -m unittest discover -s tests -v
       - name: 원본 검사·무손실 최적화·정적 페이지 생성
